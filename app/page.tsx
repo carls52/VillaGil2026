@@ -14,6 +14,7 @@ import {
   Minus,
   Plus,
   Save,
+  RefreshCw,
   Search,
   Settings,
   ShieldCheck,
@@ -343,9 +344,7 @@ export default function Home() {
             </span>
             <span className="text-sm font-black tracking-wide sm:text-base">VILLAGIL FEST 2026</span>
           </button>
-          <div className="hidden rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300 lg:block">
-            {syncStatus}
-          </div>
+          {/* syncStatus removed as requested */}
           <div className="flex gap-1 overflow-x-auto rounded-lg border border-white/10 bg-white/5 p-1">
             {[
               ["inicio", "Inicio"],
@@ -376,7 +375,15 @@ export default function Home() {
           onPoster={() => setPosterOpen(true)}
         />
       )}
-      {view === "ranking" && <RankingView attendees={state.attendees} rules={state.rules} history={state.history} />}
+      {view === "ranking" && (
+        <RankingView
+          attendees={state.attendees}
+          rules={state.rules}
+          history={state.history}
+          dispatch={dispatch}
+        />
+      )}
+      
       {view === "admin" &&
         (adminUnlocked ? (
           <AdminView state={state} dispatch={dispatch} />
@@ -752,14 +759,23 @@ function ToggleRow({
 function RankingView({
   attendees,
   rules,
-  history
+  history,
+  dispatch
 }: {
   attendees: Attendee[];
   rules: PointRule[];
   history: PointHistory[];
+  dispatch?: React.Dispatch<Action>;
 }) {
   const [remaining, setRemaining] = useState(300);
-  const ranked = useMemo(() => [...attendees].sort((a, b) => b.puntos - a.puntos), [attendees]);
+  const [polledAttendees, setPolledAttendees] = useState<Attendee[]>(attendees);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+
+  useEffect(() => {
+    setPolledAttendees(attendees);
+  }, [attendees]);
+
+  const ranked = useMemo(() => [...polledAttendees].sort((a, b) => b.puntos - a.puntos), [polledAttendees]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -767,6 +783,71 @@ function RankingView({
     }, 1000);
     return () => window.clearInterval(interval);
   }, []);
+
+  // When the countdown reaches 0, refresh ranking from the server and reset
+  useEffect(() => {
+    if (remaining !== 0) return;
+
+    let cancelled = false;
+    (async function refresh() {
+      try {
+        const res = await fetch('/api/state');
+        if (!res.ok) throw new Error('Failed to fetch state');
+        const payload = await res.json();
+        if (!cancelled && payload?.state) {
+          // Update global state if dispatch is available so whole app reflects changes
+          if (dispatch) {
+            try {
+              dispatch({ type: 'hydrate', state: payload.state });
+            } catch (err) {
+              console.error('[RankingView] dispatch error:', err);
+            }
+          }
+          setPolledAttendees(payload.state.attendees ?? []);
+        }
+      } catch (error) {
+        console.error('[RankingView] Error refrescando ranking:', error instanceof Error ? error.message : error);
+      } finally {
+        if (!cancelled) setRemaining(300);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [remaining, dispatch]);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState('');
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const res = await fetch('/api/state');
+      if (!res.ok) throw new Error('Failed to fetch state');
+      const payload = await res.json();
+      if (payload?.state) {
+        if (dispatch) {
+          try {
+            dispatch({ type: 'hydrate', state: payload.state });
+          } catch (err) {
+            console.error('[RankingView] dispatch error on manual refresh:', err);
+          }
+        }
+        setPolledAttendees(payload.state.attendees ?? []);
+        setRefreshMessage('Datos actualizados');
+      } else {
+        setRefreshMessage('No hay datos');
+      }
+    } catch (error) {
+      console.error('[RankingView] Error recargando ranking:', error instanceof Error ? error.message : error);
+      setRefreshMessage('Error al recargar');
+    } finally {
+      setRefreshing(false);
+      window.setTimeout(() => setRefreshMessage(''), 3000);
+      setRemaining(300);
+    }
+  };
 
   const minutes = Math.floor(remaining / 60)
     .toString()
@@ -781,34 +862,112 @@ function RankingView({
             <h2 className="text-3xl font-black">Ranking Live</h2>
             <p className="text-slate-300">Clasificación ordenada por puntos.</p>
           </div>
-          <div className="flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm font-bold text-emerald-300">
-            <span className="relative flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-400" />
-            </span>
-            Actualizando automáticamente cada 5 min · {minutes}:{seconds}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm font-bold text-emerald-300">
+              <span className="relative flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-400" />
+              </span>
+              Actualizando · {minutes}:{seconds}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`rounded-md px-3 py-2 text-sm font-semibold ${viewMode === 'list' ? 'bg-white text-slate-950' : 'text-slate-200 hover:bg-white/10'}`}
+                aria-pressed={viewMode === 'list'}
+              >
+                Lista
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`rounded-md px-3 py-2 text-sm font-semibold ${viewMode === 'grid' ? 'bg-white text-slate-950' : 'text-slate-200 hover:bg-white/10'}`}
+                aria-pressed={viewMode === 'grid'}
+              >
+                Grid
+              </button>
+              <button
+                onClick={handleRefresh}
+                className={`rounded-md px-3 py-2 text-sm font-semibold ${refreshing ? 'bg-white text-slate-950' : 'text-slate-200 hover:bg-white/10'}`}
+                aria-pressed={refreshing}
+              >
+                {refreshing ? 'Recargando...' : (
+                  <>
+                    <RefreshCw size={14} /> 
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[32rem] border-separate border-spacing-y-2">
-            <thead className="text-left text-sm text-slate-400">
-              <tr>
-                <th className="px-3 py-2">Posición</th>
-                <th className="px-3 py-2">Nombre</th>
-                <th className="px-3 py-2 text-right">Puntos</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ranked.map((attendee, index) => (
-                <tr key={attendee.id} className="bg-slate-950/60">
-                  <td className="rounded-l-lg px-3 py-4 font-black text-neon">#{index + 1}</td>
-                  <td className="px-3 py-4 font-bold">{attendee.nombre}</td>
-                  <td className="rounded-r-lg px-3 py-4 text-right text-xl font-black">{attendee.puntos}</td>
+        {refreshMessage && <div className="mt-2 text-sm font-semibold text-emerald-300">{refreshMessage}</div>}
+        {viewMode === 'list' ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[32rem] border-separate border-spacing-y-2">
+              <thead className="text-left text-sm text-slate-400">
+                <tr>
+                  <th className="px-3 py-2">Posición</th>
+                  <th className="px-3 py-2">Nombre</th>
+                  <th className="px-3 py-2 text-right">Puntos</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {ranked.map((attendee, index) => {
+                  const rowBg =
+                    index === 0
+                      ? 'bg-amber-600/10'
+                      : index === 1
+                      ? 'bg-slate-400/6'
+                      : index === 2
+                      ? 'bg-orange-700/8'
+                      : 'bg-slate-950/60';
+
+                  const posColor = index === 0 ? 'text-amber-400' : index === 1 ? 'text-slate-300' : index === 2 ? 'text-orange-300' : 'text-neon';
+
+                  return (
+                    <tr key={attendee.id} className={rowBg}>
+                      <td className={`rounded-l-lg px-3 py-4 font-black ${posColor}`}>
+                        <div className="flex items-center gap-2">
+                          <Trophy className={`${posColor}`} size={18} />
+                          <span>#{index + 1}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-4 font-bold">{attendee.nombre}</td>
+                      <td className="rounded-r-lg px-3 py-4 text-right text-xl font-black">{attendee.puntos}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {ranked.map((a, idx) => {
+              const cardBg =
+                idx === 0
+                  ? 'bg-amber-600/10'
+                  : idx === 1
+                  ? 'bg-slate-400/6'
+                  : idx === 2
+                  ? 'bg-orange-700/8'
+                  : 'bg-slate-950/60';
+
+              const posColor = idx === 0 ? 'text-amber-400' : idx === 1 ? 'text-slate-300' : idx === 2 ? 'text-orange-300' : 'text-neon';
+
+              return (
+                <div key={a.id} className={`rounded-lg border border-white/10 p-4 ${cardBg}`}>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className={`flex items-center gap-2 text-sm font-black ${posColor}`}>
+                      <Trophy className={`${posColor}`} size={18} />
+                      <span>#{idx + 1}</span>
+                    </div>
+                    <div className="flex-1 text-center text-lg font-black">{a.nombre}</div>
+                    <div className="text-2xl font-black">{a.puntos}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
       <aside className="rounded-lg border border-white/10 bg-white/10 p-4 sm:p-6">
         <div className="mb-4 flex items-center gap-2">
@@ -837,6 +996,8 @@ function RankingView({
     </section>
   );
 }
+
+/* GridView removed — grid is now toggled inside RankingView */
 
 function AdminGate({ onUnlock }: { onUnlock: () => void }) {
   const [password, setPassword] = useState("");
