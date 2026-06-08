@@ -257,11 +257,11 @@ export default function Home() {
   const [toast, setToast] = useState("");
   const [isHydrated, setIsHydrated] = useState(false);
   const [syncStatus, setSyncStatus] = useState("Conectando con Supabase");
-  const saveTimer = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = (message: string) => {
     setToast(message);
-    window.setTimeout(() => setToast(""), 3200);
+    setTimeout(() => setToast(""), 3200);
   };
 
   useEffect(() => {
@@ -303,10 +303,10 @@ export default function Home() {
     if (!isHydrated) return;
 
     if (saveTimer.current) {
-      window.clearTimeout(saveTimer.current);
+      clearTimeout(saveTimer.current as ReturnType<typeof setTimeout>);
     }
 
-    saveTimer.current = window.setTimeout(async () => {
+    saveTimer.current = setTimeout(async () => {
       try {
         setSyncStatus("Guardando cambios");
         const response = await fetch("/api/state", {
@@ -329,7 +329,7 @@ export default function Home() {
 
     return () => {
       if (saveTimer.current) {
-        window.clearTimeout(saveTimer.current);
+        clearTimeout(saveTimer.current as ReturnType<typeof setTimeout>);
       }
     };
   }, [state, isHydrated]);
@@ -844,7 +844,7 @@ function RankingView({
       setRefreshMessage('Error al recargar');
     } finally {
       setRefreshing(false);
-      window.setTimeout(() => setRefreshMessage(''), 3000);
+      setTimeout(() => setRefreshMessage(''), 3000);
       setRemaining(300);
     }
   };
