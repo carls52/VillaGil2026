@@ -11,6 +11,7 @@ import {
   History,
   Lock,
   MapPin,
+  Menu,
   Minus,
   Plus,
   Save,
@@ -252,6 +253,7 @@ const uid = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 export default function Home() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [view, setView] = useState("inicio");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [posterOpen, setPosterOpen] = useState(false);
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [toast, setToast] = useState("");
@@ -335,17 +337,34 @@ export default function Home() {
   }, [state, isHydrated]);
 
   return (
-    <main className="min-h-screen overflow-hidden">
+    <main className="min-h-screen">
       <nav className="sticky top-0 z-30 border-b border-white/10 bg-fondo/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-          <button onClick={() => setView("inicio")} className="flex items-center gap-2 text-left">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-neon to-violeta text-slate-950">
-              <Sparkles size={18} />
-            </span>
-            <span className="text-sm font-black tracking-wide sm:text-base">VILLAGIL FEST 2026</span>
-          </button>
-          {/* syncStatus removed as requested */}
-          <div className="flex gap-1 overflow-x-auto rounded-lg border border-white/10 bg-white/5 p-1">
+          <div className="flex flex-1 items-center justify-between gap-3 min-w-0">
+            <button
+              onClick={() => {
+                setView("inicio");
+                setMobileMenuOpen(false);
+              }}
+              className="flex min-w-0 items-center gap-2 text-left"
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-neon to-violeta text-slate-950">
+                <Sparkles size={18} />
+              </span>
+              <span className="truncate text-sm font-black tracking-wide sm:text-base">VILLAGIL FEST 2026</span>
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/10 sm:hidden"
+              onClick={() => setMobileMenuOpen((current) => !current)}
+              aria-expanded={mobileMenuOpen}
+              aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
+
+          <div className="hidden flex-wrap gap-1 overflow-x-auto rounded-lg border border-white/10 bg-white/5 p-1 sm:flex">
             {[
               ["inicio", "Inicio"],
               ["inscripcion", "Inscripción"],
@@ -364,6 +383,32 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+        {mobileMenuOpen && (
+          <div className="sm:hidden border-t border-white/10 bg-fondo/95 px-4 pb-3">
+            <div className="flex flex-col gap-2 rounded-lg border border-white/10 bg-white/5 p-2">
+              {[
+                ["inicio", "Inicio"],
+                ["inscripcion", "Inscripción"],
+                ["ranking", "Ranking"],
+                ["admin", "Admin"]
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => {
+                    setView(id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full rounded-md px-3 py-3 text-left text-sm font-semibold transition ${
+                    view === id ? "bg-white text-slate-950" : "text-slate-200 hover:bg-white/10"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </nav>
 
       {view === "inicio" && <HomeView onPoster={() => setPosterOpen(true)} onSignup={() => setView("inscripcion")} />}
