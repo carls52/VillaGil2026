@@ -25,7 +25,7 @@ import {
   Users,
   X
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 
 type Drink = string;
 type QuestionType = "text" | "yes_no" | "select";
@@ -49,6 +49,7 @@ interface QuestionConfig {
   required: boolean;
   type?: QuestionType;
   options?: string[];
+  opciones?: string[];
 }
 
 interface PointRule {
@@ -151,7 +152,7 @@ const initialState: State = {
     { id: "nombreAcompanante", label: "Nombre del acompañante", required: true },
     { id: "seQuedaACenar", label: "¿Te quedas a cenar?", required: true },
     { id: "alergias", label: "Alergias", required: false },
-    { id: "bebidas", label: "Bebidas", required: true },
+    { id: "bebidas", label: "Bebidas", required: true, type: "select", options: Object.values(drinkLabels) },
     { id: "comentarios", label: "Comentarios", required: false }
   ],
   rules: [
@@ -167,10 +168,68 @@ const initialState: State = {
   history: []
 };
 
+const cleanOptions = (question: QuestionConfig) => {
+  const options = question.options || question.opciones || [];
+  return options.map((option) => option.trim()).filter(Boolean);
+};
+
+const normalizeQuestion = (question: QuestionConfig): QuestionConfig => {
+  const type = question.type || defaultQuestionTypes[question.id] || "text";
+  const options = cleanOptions(question);
+
+  if (question.id === "bebidas") {
+    return {
+      ...question,
+      type: "select",
+      options: options.length ? options : Object.values(drinkLabels)
+    };
+  }
+
+  if (type === "yes_no") {
+    return {
+      ...question,
+      type,
+      options: options.length ? options : ["SÃ­", "No"]
+    };
+  }
+
+  if (type === "select") {
+    return {
+      ...question,
+      type,
+      options
+    };
+  }
+
+  return {
+    ...question,
+    type
+  };
+};
+
+const normalizeState = (state: State): State => {
+  const incomingQuestions = state.questions || [];
+  const baseIds = new Set(initialState.questions.map((question) => question.id));
+  const mergedBaseQuestions = initialState.questions.map((baseQuestion) =>
+    normalizeQuestion({
+      ...baseQuestion,
+      ...incomingQuestions.find((question) => question.id === baseQuestion.id)
+    })
+  );
+  const extraQuestions = incomingQuestions
+    .filter((question) => !baseIds.has(question.id))
+    .map(normalizeQuestion);
+
+  return {
+    ...state,
+    questions: [...mergedBaseQuestions, ...extraQuestions]
+  };
+};
+
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "hydrate":
-      return action.state;
+      return normalizeState(action.state);
     case "addAttendees":
       return { ...state, attendees: [...state.attendees, ...action.attendees] };
     case "updateAttendee":
@@ -258,7 +317,7 @@ function reducer(state: State, action: Action): State {
 const uid = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 export default function Home() {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, rawDispatch] = useReducer(reducer, initialState);
   const [view, setView] = useState("inicio");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [posterOpen, setPosterOpen] = useState(false);
@@ -267,6 +326,21 @@ export default function Home() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [syncStatus, setSyncStatus] = useState("Conectando con Supabase");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localChangeVersion = useRef(0);
+  const savedChangeVersion = useRef(0);
+  const questionChangeVersion = useRef(0);
+
+  const dispatch = useCallback<React.Dispatch<Action>>((action) => {
+    if (action.type !== "hydrate") {
+      const nextVersion = localChangeVersion.current + 1;
+      localChangeVersion.current = nextVersion;
+
+      if (action.type === "addQuestion" || action.type === "updateQuestion" || action.type === "deleteQuestion") {
+        questionChangeVersion.current = nextVersion;
+      }
+    }
+    rawDispatch(action);
+  }, []);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -311,6 +385,9 @@ export default function Home() {
   useEffect(() => {
     if (!isHydrated) return;
 
+    const versionToSave = localChangeVersion.current;
+    if (versionToSave === savedChangeVersion.current) return;
+
     if (saveTimer.current) {
       clearTimeout(saveTimer.current as ReturnType<typeof setTimeout>);
     }
@@ -318,10 +395,28 @@ export default function Home() {
     saveTimer.current = setTimeout(async () => {
       try {
         setSyncStatus("Guardando cambios");
+        let stateToSave = state;
+
+        if (questionChangeVersion.current <= savedChangeVersion.current) {
+          const latestResponse = await fetch("/api/state", { cache: "no-store" });
+          const latestPayload = await latestResponse.json();
+
+          if (!latestResponse.ok) {
+            throw new Error(latestPayload?.error || "No se pudo comprobar el estado actual.");
+          }
+
+          if (latestPayload.state?.questions) {
+            stateToSave = {
+              ...state,
+              questions: latestPayload.state.questions
+            };
+          }
+        }
+
         const response = await fetch("/api/state", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ state })
+          body: JSON.stringify({ state: stateToSave })
         });
         const payload = await response.json();
 
@@ -329,6 +424,10 @@ export default function Home() {
           throw new Error(payload?.error || "No se pudo guardar el estado.");
         }
 
+        savedChangeVersion.current = Math.max(savedChangeVersion.current, versionToSave);
+        if (stateToSave !== state) {
+          rawDispatch({ type: "hydrate", state: stateToSave });
+        }
         setSyncStatus("Datos sincronizados");
       } catch (error) {
         setSyncStatus("Cambios solo en memoria: revisa Supabase");
@@ -419,7 +518,15 @@ export default function Home() {
       </nav>
 
       {view === "inicio" && <HomeView onPoster={() => setPosterOpen(true)} onSignup={() => setView("inscripcion")} />}
-      {view === "inscripcion" && (
+      {view === "inscripcion" && !isHydrated && (
+        <section className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-md place-items-center px-4 py-8">
+          <div className="w-full rounded-lg border border-white/10 bg-white/10 p-5 text-center">
+            <p className="font-black text-white">Cargando inscripción</p>
+            <p className="mt-2 text-sm text-slate-300">Sincronizando opciones desde Supabase.</p>
+          </div>
+        </section>
+      )}
+      {view === "inscripcion" && isHydrated && (
         <SignupView
           questions={state.questions}
           dispatch={dispatch}
@@ -726,19 +833,20 @@ function SignupView({
           />
         </Field>
         <Field label={beverageQuestion.label} required={beverageQuestion.required}>
-          <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-3">
+          <div className="flex flex-col gap-2">
             {beverageOptions.map((drink) => (
               <button
                 key={drink}
                 type="button"
                 onClick={() => toggleDrink(drink)}
-                className={`min-h-10 sm:min-h-12 rounded-lg border px-2 sm:px-3 text-xs sm:text-sm font-bold transition ${
+                className={`flex min-h-10 items-center justify-between rounded-lg border px-3 text-left text-xs font-bold transition sm:min-h-12 sm:text-sm ${
                   form.bebidas.includes(drink)
                     ? "border-neon bg-neon text-slate-950"
                     : "border-white/12 bg-slate-950/50 text-slate-200"
                 }`}
               >
-                {getDrinkLabel(drink)}
+                <span>{getDrinkLabel(drink)}</span>
+                {form.bebidas.includes(drink) && <Check size={16} />}
               </button>
             ))}
           </div>
@@ -1564,7 +1672,7 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
   const [label, setLabel] = useState("");
   const [required, setRequired] = useState(false);
   const [type, setType] = useState<QuestionType>("text");
-  const [optionsText, setOptionsText] = useState("");
+  const [newOptions, setNewOptions] = useState([""]);
   const fixedIds = new Set([
     "nombre",
     "traeAcompanante",
@@ -1581,8 +1689,7 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
     const options =
       type === "yes_no"
         ? ["Sí", "No"]
-        : optionsText
-            .split(",")
+        : newOptions
             .map((option) => option.trim())
             .filter(Boolean);
     if (type === "select" && !options.length) return;
@@ -1590,7 +1697,31 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
     setLabel("");
     setRequired(false);
     setType("text");
-    setOptionsText("");
+    setNewOptions([""]);
+  };
+
+  const getQuestionOptions = (question: QuestionConfig) =>
+    question.options || (question.id === "bebidas" ? getDrinkOptions(question) : []);
+
+  const updateQuestionOption = (question: QuestionConfig, index: number, value: string) => {
+    const options = getQuestionOptions(question).map((option, currentIndex) =>
+      currentIndex === index ? value : option
+    );
+    dispatch({ type: "updateQuestion", question: { ...question, options } });
+  };
+
+  const addQuestionOption = (question: QuestionConfig) => {
+    dispatch({
+      type: "updateQuestion",
+      question: { ...question, options: [...getQuestionOptions(question), "Nueva opción"] }
+    });
+  };
+
+  const removeQuestionOption = (question: QuestionConfig, index: number) => {
+    dispatch({
+      type: "updateQuestion",
+      question: { ...question, options: getQuestionOptions(question).filter((_, currentIndex) => currentIndex !== index) }
+    });
   };
 
   return (
@@ -1619,12 +1750,38 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
           </button>
         </div>
         {type === "select" && (
-          <input
-            value={optionsText}
-            onChange={(event) => setOptionsText(event.target.value)}
-            className="input mt-2 sm:mt-3 text-xs sm:text-sm"
-            placeholder="Opciones separadas por coma. Ejemplo: Camiseta S, Camiseta M, Camiseta L"
-          />
+          <div className="mt-3 space-y-2">
+            {newOptions.map((option, index) => (
+              <div key={index} className="flex gap-2">
+                <input
+                  value={option}
+                  onChange={(event) =>
+                    setNewOptions((current) =>
+                      current.map((item, currentIndex) => (currentIndex === index ? event.target.value : item))
+                    )
+                  }
+                  className="input text-xs sm:text-sm"
+                  placeholder={`Opción ${index + 1}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setNewOptions((current) => current.filter((_, currentIndex) => currentIndex !== index))}
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-white/10 bg-slate-950/55 text-slate-300 transition hover:bg-white/10"
+                  aria-label="Eliminar opción"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setNewOptions((current) => [...current, ""])}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-neon/25 bg-neon/10 px-3 text-xs font-black text-neon transition hover:bg-neon/15"
+            >
+              <Plus size={15} />
+              Añadir opción
+            </button>
+          </div>
         )}
         {type === "yes_no" && (
           <p className="mt-3 text-sm font-semibold text-slate-300">Respuestas visibles: Sí / No.</p>
@@ -1674,23 +1831,34 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
             />
           )}
           {(question.type || defaultQuestionTypes[question.id] || "text") === "select" && (
-            <input
-              value={(question.options || (question.id === "bebidas" ? getDrinkOptions(question) : [])).join(", ")}
-              onChange={(event) =>
-                dispatch({
-                  type: "updateQuestion",
-                  question: {
-                    ...question,
-                    options: event.target.value
-                      .split(",")
-                      .map((option) => option.trim())
-                      .filter(Boolean)
-                  }
-                })
-              }
-              className="input md:col-span-4 text-xs sm:text-sm"
-              placeholder="Opciones separadas por coma"
-            />
+            <div className="space-y-2 md:col-span-4">
+              {getQuestionOptions(question).map((option, index) => (
+                <div key={`${question.id}-${index}`} className="flex gap-2">
+                  <input
+                    value={option}
+                    onChange={(event) => updateQuestionOption(question, index, event.target.value)}
+                    className="input text-xs sm:text-sm"
+                    placeholder={`Opción ${index + 1}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeQuestionOption(question, index)}
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-white/10 bg-slate-950/55 text-slate-300 transition hover:bg-white/10"
+                    aria-label="Eliminar opción"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addQuestionOption(question)}
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-neon/25 bg-neon/10 px-3 text-xs font-black text-neon transition hover:bg-neon/15"
+              >
+                <Plus size={15} />
+                Añadir opción
+              </button>
+            </div>
           )}
         </div>
       ))}
