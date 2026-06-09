@@ -451,7 +451,7 @@ export default function Home() {
 
 function HomeView({ onPoster, onSignup }: { onPoster: () => void; onSignup: () => void }) {
   return (
-    <section className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-8 px-4 py-8 lg:grid-cols-[1fr_0.82fr]">
+    <section className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-6 px-4 py-6 sm:py-8 sm:gap-8 lg:grid-cols-[1fr_0.82fr]">
       <div className="space-y-7">
         <div className="inline-flex items-center gap-2 rounded-full border border-neon/30 bg-neon/10 px-4 py-2 text-sm font-semibold text-neon">
           <Clock3 size={16} />
@@ -584,7 +584,7 @@ function SignupView({
   };
 
   return (
-    <section className="mx-auto grid max-w-6xl gap-8 px-4 py-8 lg:grid-cols-[0.8fr_1.2fr]">
+    <section className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:py-8 sm:gap-8 lg:grid-cols-[0.8fr_1.2fr]">
       <aside className="space-y-4">
         <h2 className="text-3xl font-black">Inscripción</h2>
         <p className="text-slate-300">
@@ -599,13 +599,13 @@ function SignupView({
           Ver el cartel oficial
         </button>
       </aside>
-      <form onSubmit={submit} className="space-y-5 rounded-lg border border-white/10 bg-white/10 p-4 sm:p-6">
+      <form onSubmit={submit} className="space-y-3 sm:space-y-5 rounded-lg border border-white/10 bg-white/10 p-3 sm:p-6">
         <Field label={question("nombre").label} required={question("nombre").required}>
           <input
             required={question("nombre").required}
             value={form.nombre}
             onChange={(event) => setForm({ ...form, nombre: event.target.value })}
-            className="input"
+            className="input text-xs sm:text-sm"
             placeholder="Tu nombre"
           />
         </Field>
@@ -625,7 +625,7 @@ function SignupView({
                 required={form.traeAcompanante}
                 value={form.nombreAcompanante}
                 onChange={(event) => setForm({ ...form, nombreAcompanante: event.target.value })}
-                className="input"
+                className="input text-xs sm:text-sm"
                 placeholder="Nombre del acompañante"
               />
             </Field>
@@ -641,18 +641,18 @@ function SignupView({
             required={question("alergias").required}
             value={form.alergias}
             onChange={(event) => setForm({ ...form, alergias: event.target.value })}
-            className="input"
+            className="input text-xs sm:text-sm"
             placeholder="Indica alergias o intolerancias"
           />
         </Field>
         <Field label={question("bebidas").label} required={question("bebidas").required}>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-3">
             {(Object.keys(drinkLabels) as Drink[]).map((drink) => (
               <button
                 key={drink}
                 type="button"
                 onClick={() => toggleDrink(drink)}
-                className={`min-h-12 rounded-lg border px-3 text-sm font-bold transition ${
+                className={`min-h-10 sm:min-h-12 rounded-lg border px-2 sm:px-3 text-xs sm:text-sm font-bold transition ${
                   form.bebidas.includes(drink)
                     ? "border-neon bg-neon text-slate-950"
                     : "border-white/12 bg-slate-950/50 text-slate-200"
@@ -677,7 +677,7 @@ function SignupView({
             required={question("comentarios").required}
             value={form.comentarios}
             onChange={(event) => setForm({ ...form, comentarios: event.target.value })}
-            className="input min-h-28 resize-y"
+            className="input min-h-20 sm:min-h-28 resize-y text-xs sm:text-sm"
             placeholder="Cualquier comentario útil"
           />
         </Field>
@@ -689,8 +689,8 @@ function SignupView({
             onChange={(value) => setExtraAnswers({ ...extraAnswers, [item.id]: value })}
           />
         ))}
-        <button className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-5 py-3 font-black text-slate-950">
-          <Save size={19} />
+        <button className="inline-flex min-h-10 sm:min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-4 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-black text-slate-950">
+          <Save size={16} />
           Enviar inscripción
         </button>
       </form>
@@ -700,8 +700,8 @@ function SignupView({
 
 function Field({ label, required, children }: { label: string; required: boolean; children: React.ReactNode }) {
   return (
-    <label className="block space-y-2">
-      <span className="text-sm font-bold text-slate-200">
+    <label className="block space-y-1 sm:space-y-2">
+      <span className="text-xs sm:text-sm font-bold text-slate-200">
         {label} {required && <span className="text-neon">*</span>}
       </span>
       {children}
@@ -724,13 +724,13 @@ function DynamicQuestionField({
   if (type === "yes_no" || type === "select") {
     return (
       <Field label={question.label} required={question.required}>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
           {options.map((option) => (
             <button
               key={option}
               type="button"
               onClick={() => onChange(option)}
-              className={`min-h-12 rounded-lg border px-3 text-sm font-bold transition ${
+              className={`min-h-10 sm:min-h-12 rounded-lg border px-2 sm:px-3 text-xs sm:text-sm font-bold transition ${
                 value === option
                   ? "border-neon bg-neon text-slate-950"
                   : "border-white/12 bg-slate-950/50 text-slate-200"
@@ -780,19 +780,19 @@ function ToggleRow({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-slate-950/40 p-4">
-      <span className="font-bold text-slate-100">{label}</span>
-      <div className="flex items-center gap-3">
-        <span className="min-w-8 text-right text-sm font-black text-neon">{checked ? "Sí" : "No"}</span>
+    <div className="flex items-center justify-between gap-3 sm:gap-4 rounded-lg border border-white/10 bg-slate-950/40 p-3 sm:p-4">
+      <span className="text-xs sm:text-sm font-bold text-slate-100 flex-1">{label}</span>
+      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <span className="min-w-7 sm:min-w-8 text-right text-xs sm:text-sm font-black text-neon">{checked ? "Sí" : "No"}</span>
         <button
           type="button"
           onClick={() => onChange(!checked)}
-          className={`relative h-8 w-14 rounded-full transition ${checked ? "bg-neon" : "bg-slate-700"}`}
+          className={`relative h-7 sm:h-8 w-12 sm:w-14 rounded-full transition ${checked ? "bg-neon" : "bg-slate-700"}`}
           aria-label={label}
         >
           <span
-            className={`absolute top-1 h-6 w-6 rounded-full bg-white transition ${
-              checked ? "left-7" : "left-1"
+            className={`absolute top-0.5 sm:top-1 h-6 w-6 rounded-full bg-white transition ${
+              checked ? "left-6 sm:left-7" : "left-0.5 sm:left-1"
             }`}
           />
         </button>
@@ -900,39 +900,39 @@ function RankingView({
   const seconds = (remaining % 60).toString().padStart(2, "0");
 
   return (
-    <section className="mx-auto grid max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[1fr_22rem]">
-      <div className="rounded-lg border border-white/10 bg-white/10 p-4 sm:p-6">
-        <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+    <section className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-6 px-4 py-6 sm:py-8 lg:grid lg:grid-cols-[1fr_22rem]">
+      <div className="min-w-0 rounded-lg border border-white/10 bg-white/10 p-3 sm:p-6">
+        <div className="mb-3 sm:mb-5 flex flex-col justify-between gap-2 sm:gap-3 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-3xl font-black">Ranking Live</h2>
-            <p className="text-slate-300">Clasificación ordenada por puntos.</p>
+            <h2 className="text-2xl sm:text-3xl font-black">Ranking Live</h2>
+            <p className="text-xs sm:text-sm text-slate-300">Clasificación ordenada por puntos.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm font-bold text-emerald-300">
-              <span className="relative flex h-3 w-3">
+          <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center">
+            <div className="flex max-w-full items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-2 py-1 text-xs font-bold text-emerald-300 sm:px-3 sm:py-2 sm:text-sm">
+              <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-400" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
               </span>
               Actualizando · {minutes}:{seconds}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex max-w-full flex-wrap items-center gap-1">
               <button
                 onClick={() => setViewMode('list')}
-                className={`rounded-md px-3 py-2 text-sm font-semibold ${viewMode === 'list' ? 'bg-white text-slate-950' : 'text-slate-200 hover:bg-white/10'}`}
+                className={`rounded-md px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm font-semibold ${viewMode === 'list' ? 'bg-white text-slate-950' : 'text-slate-200 hover:bg-white/10'}`}
                 aria-pressed={viewMode === 'list'}
               >
                 Lista
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`rounded-md px-3 py-2 text-sm font-semibold ${viewMode === 'grid' ? 'bg-white text-slate-950' : 'text-slate-200 hover:bg-white/10'}`}
+                className={`rounded-md px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm font-semibold ${viewMode === 'grid' ? 'bg-white text-slate-950' : 'text-slate-200 hover:bg-white/10'}`}
                 aria-pressed={viewMode === 'grid'}
               >
                 Grid
               </button>
               <button
                 onClick={handleRefresh}
-                className={`rounded-md px-3 py-2 text-sm font-semibold ${refreshing ? 'bg-white text-slate-950' : 'text-slate-200 hover:bg-white/10'}`}
+                className={`rounded-md px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm font-semibold ${refreshing ? 'bg-white text-slate-950' : 'text-slate-200 hover:bg-white/10'}`}
                 aria-pressed={refreshing}
               >
                 {refreshing ? 'Recargando...' : (
@@ -946,7 +946,33 @@ function RankingView({
         </div>
         {refreshMessage && <div className="mt-2 text-sm font-semibold text-emerald-300">{refreshMessage}</div>}
         {viewMode === 'list' ? (
-          <div className="overflow-x-auto">
+          <>
+          <div className="space-y-2 sm:hidden">
+            {ranked.map((attendee, index) => {
+              const rowBg =
+                index === 0
+                  ? 'bg-amber-600/10'
+                  : index === 1
+                  ? 'bg-slate-400/6'
+                  : index === 2
+                  ? 'bg-orange-700/8'
+                  : 'bg-slate-950/60';
+
+              const posColor = index === 0 ? 'text-amber-400' : index === 1 ? 'text-slate-300' : index === 2 ? 'text-orange-300' : 'text-neon';
+
+              return (
+                <div key={attendee.id} className={`flex min-w-0 items-center gap-3 rounded-lg p-3 ${rowBg}`}>
+                  <div className={`flex shrink-0 items-center gap-1 text-sm font-black ${posColor}`}>
+                    <Trophy className={posColor} size={16} />
+                    <span>#{index + 1}</span>
+                  </div>
+                  <div className="min-w-0 flex-1 truncate font-bold">{attendee.nombre}</div>
+                  <div className="shrink-0 text-right text-xl font-black">{attendee.puntos}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="hidden overflow-x-auto sm:block">
             <table className="w-full min-w-[32rem] border-separate border-spacing-y-2">
               <thead className="text-left text-sm text-slate-400">
                 <tr>
@@ -984,8 +1010,9 @@ function RankingView({
               </tbody>
             </table>
           </div>
+          </>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {ranked.map((a, idx) => {
               const cardBg =
                 idx === 0
@@ -999,14 +1026,14 @@ function RankingView({
               const posColor = idx === 0 ? 'text-amber-400' : idx === 1 ? 'text-slate-300' : idx === 2 ? 'text-orange-300' : 'text-neon';
 
               return (
-                <div key={a.id} className={`rounded-lg border border-white/10 p-4 ${cardBg}`}>
-                  <div className="flex items-center justify-between gap-4">
-                    <div className={`flex items-center gap-2 text-sm font-black ${posColor}`}>
-                      <Trophy className={`${posColor}`} size={18} />
+                <div key={a.id} className={`min-w-0 rounded-lg border border-white/10 p-3 sm:p-4 ${cardBg}`}>
+                  <div className="flex min-w-0 items-center justify-between gap-3 sm:gap-4">
+                    <div className={`flex shrink-0 items-center gap-2 text-sm font-black ${posColor}`}>
+                      <Trophy className={posColor} size={18} />
                       <span>#{idx + 1}</span>
                     </div>
-                    <div className="flex-1 text-center text-lg font-black">{a.nombre}</div>
-                    <div className="text-2xl font-black">{a.puntos}</div>
+                    <div className="min-w-0 flex-1 truncate text-center text-base font-black sm:text-lg">{a.nombre}</div>
+                    <div className="shrink-0 text-2xl font-black">{a.puntos}</div>
                   </div>
                 </div>
               );
@@ -1058,25 +1085,25 @@ function AdminGate({ onUnlock }: { onUnlock: () => void }) {
   };
 
   return (
-    <section className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-md place-items-center px-4 py-8">
-      <form onSubmit={submit} className="w-full space-y-5 rounded-lg border border-white/10 bg-white/10 p-6">
-        <div className="grid h-12 w-12 place-items-center rounded-lg bg-neon/15 text-neon">
-          <Lock />
+    <section className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-md place-items-center px-4 py-6 sm:py-8">
+      <form onSubmit={submit} className="w-full space-y-3 sm:space-y-5 rounded-lg border border-white/10 bg-white/10 p-4 sm:p-6">
+        <div className="grid h-10 sm:h-12 w-10 sm:w-12 place-items-center rounded-lg bg-neon/15 text-neon">
+          <Lock size={20} />
         </div>
         <div>
-          <h2 className="text-2xl font-black">Acceso de administración</h2>
-          <p className="mt-2 text-sm text-slate-300">Introduce la contraseña para abrir el panel.</p>
+          <h2 className="text-lg sm:text-2xl font-black">Acceso de administración</h2>
+          <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-300">Introduce la contraseña para abrir el panel.</p>
         </div>
         <input
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="input"
+          className="input text-xs sm:text-sm"
           placeholder="Contraseña"
         />
-        {error && <p className="text-sm font-bold text-rose-300">{error}</p>}
-        <button className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-5 py-3 font-black text-slate-950">
-          <ShieldCheck size={19} />
+        {error && <p className="text-xs sm:text-sm font-bold text-rose-300">{error}</p>}
+        <button className="inline-flex min-h-10 sm:min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-4 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-black text-slate-950">
+          <ShieldCheck size={16} />
           Entrar
         </button>
       </form>
@@ -1094,7 +1121,7 @@ function AdminView({ state, dispatch }: { state: State; dispatch: React.Dispatch
   ];
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-8">
+    <section className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
       <div className="mb-6 flex items-center gap-3">
         <Settings className="text-neon" />
         <div>
@@ -1148,7 +1175,7 @@ function ResponsesTab({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-2 sm:gap-3 sm:grid-cols-3">
         <SummaryCard label="Total asistentes" value={attendees.length.toString()} />
         <SummaryCard label="Se quedan a cenar" value={dinner.toString()} />
         <SummaryCard label="No cenan" value={(attendees.length - dinner).toString()} />
@@ -1173,11 +1200,11 @@ function ResponsesTab({
           })}
         </div>
       </div>
-      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/10 p-2">
-        <table className="w-full min-w-[76rem] text-sm">
+      <div className="-mx-4 overflow-x-auto rounded-lg border border-white/10 bg-white/10 p-2 sm:mx-0">
+        <table className="w-full min-w-[50rem] sm:min-w-[76rem] text-xs sm:text-sm">
           <thead className="text-left text-slate-400">
             <tr>
-              {["Nombre", "Acompañante", "Cena", "Bebidas", "Alergias", "Comentarios", "Preguntas", "Puntos", "Acciones"].map(
+              {["Nombre", "Acompañante", "Cena", "Bebidas", "Puntos", "Acciones"].map(
                 (header) => (
                   <th key={header} className="px-3 py-3">
                     {header}
@@ -1189,27 +1216,18 @@ function ResponsesTab({
           <tbody>
             {attendees.map((attendee) => (
               <tr key={attendee.id} className="border-t border-white/10">
-                <td className="px-3 py-3 font-bold">{attendee.nombre}</td>
-                <td className="px-3 py-3">{attendee.nombreAcompanante || "No"}</td>
-                <td className="px-3 py-3">{attendee.seQuedaACenar ? "Sí" : "No"}</td>
-                <td className="px-3 py-3">{attendee.bebidas.map((drink) => drinkLabels[drink]).join(", ")}</td>
-                <td className="px-3 py-3">{attendee.alergias || "No indicado"}</td>
-                <td className="px-3 py-3">{attendee.comentarios || "Sin comentarios"}</td>
-                <td className="px-3 py-3">
-                  {attendee.respuestas && Object.keys(attendee.respuestas).length
-                    ? Object.entries(attendee.respuestas)
-                        .map(([id, value]) => `${questionLabels[id] || "Pregunta"}: ${value}`)
-                        .join(" · ")
-                    : "Sin respuestas extra"}
-                </td>
-                <td className="px-3 py-3 font-black text-neon">{attendee.puntos}</td>
-                <td className="px-3 py-3">
-                  <div className="flex gap-2">
-                    <IconButton label="Editar" onClick={() => setEditing(attendee)} icon={<Edit3 size={16} />} />
+                <td className="px-2 sm:px-3 py-3 font-bold">{attendee.nombre}</td>
+                <td className="px-2 sm:px-3 py-3 text-xs sm:text-sm">{attendee.nombreAcompanante || "No"}</td>
+                <td className="px-2 sm:px-3 py-3 text-xs sm:text-sm">{attendee.seQuedaACenar ? "Sí" : "No"}</td>
+                <td className="px-2 sm:px-3 py-3 text-xs sm:text-sm">{attendee.bebidas.map((drink) => drinkLabels[drink]).join(", ")}</td>
+                <td className="px-2 sm:px-3 py-3 font-black text-neon text-right">{attendee.puntos}</td>
+                <td className="px-2 sm:px-3 py-3">
+                  <div className="flex gap-1 sm:gap-2">
+                    <IconButton label="Editar" onClick={() => setEditing(attendee)} icon={<Edit3 size={14} />} />
                     <IconButton
                       label="Eliminar"
                       onClick={() => dispatch({ type: "deleteAttendee", id: attendee.id })}
-                      icon={<Trash2 size={16} />}
+                      icon={<Trash2 size={14} />}
                     />
                   </div>
                 </td>
@@ -1268,7 +1286,7 @@ function QuickControlTab({
               <p className="font-black">{attendee.nombre}</p>
               <p className="text-sm text-slate-400">{attendee.puntos} puntos</p>
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[-1, 1, 5, 10].map((delta) => (
                 <button
                   key={delta}
@@ -1280,7 +1298,7 @@ function QuickControlTab({
                       label: delta > 0 ? `Ajuste rápido +${delta}` : `Ajuste rápido ${delta}`
                     })
                   }
-                  className="min-h-12 rounded-lg border border-neon/25 bg-neon/10 px-3 font-black text-neon active:scale-95"
+                  className="min-h-10 sm:min-h-12 rounded-lg border border-neon/25 bg-neon/10 px-2 sm:px-3 text-xs sm:text-sm font-black text-neon active:scale-95"
                 >
                   {delta > 0 ? `+${delta}` : delta}
                 </button>
@@ -1288,7 +1306,7 @@ function QuickControlTab({
             </div>
             <button
               onClick={() => setSelected(attendee)}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-violeta/30 bg-violeta/10 px-4 font-black text-violeta active:scale-95"
+              className="inline-flex min-h-10 sm:min-h-12 items-center justify-center gap-2 rounded-lg border border-violeta/30 bg-violeta/10 px-3 sm:px-4 text-xs sm:text-sm font-black text-violeta active:scale-95 sm:col-span-2"
             >
               <Plus size={18} />
               Acción
@@ -1304,7 +1322,7 @@ function QuickControlTab({
                   label: "Ajuste manual en control rápido"
                 })
               }
-              className="input min-h-12 text-center font-black"
+              className="input min-h-10 sm:min-h-12 text-center text-xs sm:text-sm font-black"
               aria-label={`Puntos de ${attendee.nombre}`}
             />
           </div>
@@ -1356,23 +1374,23 @@ function PointActionModal({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-lg border border-white/10 bg-slate-950 p-5">
-        <div className="mb-5 flex items-center justify-between gap-3">
+      <div className="w-full max-w-lg rounded-lg border border-white/10 bg-slate-950 p-4 sm:p-5">
+        <div className="mb-4 sm:mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
           <div>
-            <h3 className="text-xl font-black">Añadir puntos</h3>
-            <p className="text-sm text-slate-300">{attendee.nombre}</p>
+            <h3 className="text-lg sm:text-xl font-black">Añadir puntos</h3>
+            <p className="text-xs sm:text-sm text-slate-300">{attendee.nombre}</p>
           </div>
           <IconButton label="Cerrar" onClick={onClose} icon={<X size={17} />} />
         </div>
         <div className="grid grid-cols-2 gap-2 rounded-lg border border-white/10 bg-white/5 p-1">
           {[
             ["rule", "Regla"],
-            ["custom", "Personalizada"]
+            ["custom", "Personal."]
           ].map(([id, label]) => (
             <button
               key={id}
               onClick={() => setMode(id as "rule" | "custom")}
-              className={`min-h-11 rounded-md font-black ${
+              className={`min-h-10 sm:min-h-11 rounded-md text-xs sm:text-sm font-black ${
                 mode === id ? "bg-white text-slate-950" : "text-slate-200 hover:bg-white/10"
               }`}
             >
@@ -1380,10 +1398,10 @@ function PointActionModal({
             </button>
           ))}
         </div>
-        <div className="mt-5 space-y-4">
+        <div className="mt-4 sm:mt-5 space-y-3 sm:space-y-4">
           {mode === "rule" ? (
             <Field label="Acción" required>
-              <select value={ruleId} onChange={(event) => setRuleId(event.target.value)} className="input">
+              <select value={ruleId} onChange={(event) => setRuleId(event.target.value)} className="input text-xs sm:text-sm">
                 {rules.map((rule) => (
                   <option key={rule.id} value={rule.id}>
                     {rule.label} ({rule.value > 0 ? "+" : ""}
@@ -1398,8 +1416,8 @@ function PointActionModal({
                 <input
                   value={customLabel}
                   onChange={(event) => setCustomLabel(event.target.value)}
-                  className="input"
-                  placeholder="Ejemplo: Penalización por retraso"
+                  className="input text-xs sm:text-sm"
+                  placeholder="Ej: Penalización por retraso"
                 />
               </Field>
               <Field label="Puntos" required>
@@ -1407,16 +1425,16 @@ function PointActionModal({
                   type="number"
                   value={customValue}
                   onChange={(event) => setCustomValue(Number(event.target.value || 0))}
-                  className="input"
+                  className="input text-xs sm:text-sm"
                 />
               </Field>
             </>
           )}
           <button
             onClick={apply}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-5 py-3 font-black text-slate-950"
+            className="inline-flex min-h-10 sm:min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-4 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-black text-slate-950"
           >
-            <Plus size={18} />
+            <Plus size={16} />
             Aplicar puntos
           </button>
         </div>
@@ -1492,17 +1510,17 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <div className="rounded-lg border border-white/10 bg-white/10 p-4">
-        <h3 className="mb-4 text-xl font-black">Añadir pregunta</h3>
-        <div className="grid gap-3 md:grid-cols-[1fr_12rem_auto_auto] md:items-center">
+        <h3 className="mb-3 sm:mb-4 text-lg sm:text-xl font-black">Añadir pregunta</h3>
+        <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-[1fr_auto] md:grid-cols-[1fr_12rem_auto_auto] md:items-center">
           <input
             value={label}
             onChange={(event) => setLabel(event.target.value)}
-            className="input"
+            className="input text-xs sm:text-sm"
             placeholder="Texto de la pregunta"
           />
-          <select value={type} onChange={(event) => setType(event.target.value as QuestionType)} className="input">
+          <select value={type} onChange={(event) => setType(event.target.value as QuestionType)} className="input text-xs sm:text-sm">
             <option value="text">Texto libre</option>
             <option value="yes_no">Sí / No</option>
             <option value="select">Opciones</option>
@@ -1510,9 +1528,9 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
           <ToggleRow label="Obligatoria" checked={required} onChange={setRequired} />
           <button
             onClick={addQuestion}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-5 font-black text-slate-950"
+            className="inline-flex min-h-10 sm:min-h-12 items-center justify-center gap-1 sm:gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-3 sm:px-5 text-xs sm:text-sm font-black text-slate-950 md:col-span-1"
           >
-            <Plus size={18} />
+            <Plus size={16} />
             Añadir
           </button>
         </div>
@@ -1520,7 +1538,7 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
           <input
             value={optionsText}
             onChange={(event) => setOptionsText(event.target.value)}
-            className="input mt-3"
+            className="input mt-2 sm:mt-3 text-xs sm:text-sm"
             placeholder="Opciones separadas por coma. Ejemplo: Camiseta S, Camiseta M, Camiseta L"
           />
         )}
@@ -1529,11 +1547,11 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
         )}
       </div>
       {questions.map((question) => (
-        <div key={question.id} className="grid gap-3 rounded-lg border border-white/10 bg-white/10 p-4 md:grid-cols-[1fr_12rem_auto_auto]">
+        <div key={question.id} className="grid gap-2 sm:gap-3 rounded-lg border border-white/10 bg-white/10 p-3 sm:p-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-[1fr_12rem_auto_auto]">
           <input
             value={question.label}
             onChange={(event) => dispatch({ type: "updateQuestion", question: { ...question, label: event.target.value } })}
-            className="input"
+            className="input text-xs sm:text-sm"
           />
           <select
             value={question.type || defaultQuestionTypes[question.id] || "text"}
@@ -1548,7 +1566,7 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
                 }
               });
             }}
-            className="input"
+            className="input text-xs sm:text-sm"
             disabled={fixedIds.has(question.id)}
           >
             <option value="text">Texto libre</option>
@@ -1561,14 +1579,14 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
             onChange={(required) => dispatch({ type: "updateQuestion", question: { ...question, required } })}
           />
           {fixedIds.has(question.id) ? (
-            <span className="inline-flex min-h-10 items-center justify-center rounded-lg border border-white/10 px-3 text-sm font-bold text-slate-400">
+            <span className="inline-flex min-h-8 sm:min-h-10 items-center justify-center rounded-lg border border-white/10 px-2 sm:px-3 text-xs font-bold text-slate-400">
               Base
             </span>
           ) : (
             <IconButton
               label="Eliminar"
               onClick={() => dispatch({ type: "deleteQuestion", id: question.id })}
-              icon={<Trash2 size={16} />}
+              icon={<Trash2 size={14} />}
             />
           )}
           {(question.type || "text") === "select" && (
@@ -1586,7 +1604,7 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
                   }
                 })
               }
-              className="input md:col-span-4"
+              className="input md:col-span-4 text-xs sm:text-sm"
               placeholder="Opciones separadas por coma"
             />
           )}
@@ -1609,37 +1627,38 @@ function RulesTab({ rules, dispatch }: { rules: PointRule[]; dispatch: React.Dis
   };
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-white/10 bg-white/10 p-4">
-        <h3 className="mb-4 text-xl font-black">Añadir regla</h3>
-        <div className="grid gap-3 md:grid-cols-[1fr_9rem_auto]">
+    <div className="space-y-3 sm:space-y-4">
+      <div className="rounded-lg border border-white/10 bg-white/10 p-3 sm:p-4">
+        <h3 className="mb-3 sm:mb-4 text-lg sm:text-xl font-black">Añadir regla</h3>
+        <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-[1fr_auto] md:grid-cols-[1fr_9rem_auto]">
           <input
             value={label}
             onChange={(event) => setLabel(event.target.value)}
-            className="input"
+            className="input text-xs sm:text-sm"
             placeholder="Nombre de la regla"
           />
           <input
             type="number"
             value={value}
             onChange={(event) => setValue(Number(event.target.value || 0))}
-            className="input font-black"
+            className="input text-xs sm:text-sm font-black"
+            placeholder="Puntos"
           />
           <button
             onClick={addRule}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-5 font-black text-slate-950"
+            className="inline-flex min-h-10 sm:min-h-12 items-center justify-center gap-1 sm:gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-3 sm:px-5 text-xs sm:text-sm font-black text-slate-950 sm:col-span-2 md:col-span-1"
           >
-            <Plus size={18} />
+            <Plus size={16} />
             Añadir
           </button>
         </div>
       </div>
       {rules.map((rule) => (
-        <div key={rule.id} className="grid gap-3 rounded-lg border border-white/10 bg-white/10 p-4 md:grid-cols-[1fr_9rem_auto]">
+        <div key={rule.id} className="grid gap-2 sm:gap-3 rounded-lg border border-white/10 bg-white/10 p-3 sm:p-4 grid-cols-1 sm:grid-cols-[1fr_auto] md:grid-cols-[1fr_9rem_auto]">
           <input
             value={rule.label}
             onChange={(event) => dispatch({ type: "updateRule", rule: { ...rule, label: event.target.value } })}
-            className="input"
+            className="input text-xs sm:text-sm"
           />
           <input
             type="number"
@@ -1647,12 +1666,13 @@ function RulesTab({ rules, dispatch }: { rules: PointRule[]; dispatch: React.Dis
             onChange={(event) =>
               dispatch({ type: "updateRule", rule: { ...rule, value: Number(event.target.value || 0) } })
             }
-            className="input font-black"
+            className="input text-xs sm:text-sm font-black"
+            placeholder="Puntos"
           />
           <IconButton
             label="Eliminar"
             onClick={() => dispatch({ type: "deleteRule", id: rule.id })}
-            icon={<Trash2 size={16} />}
+            icon={<Trash2 size={14} />}
           />
         </div>
       ))}
@@ -1673,36 +1693,37 @@ function EditAttendeeModal({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-lg border border-white/10 bg-slate-950 p-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-xl font-black">Editar respuesta</h3>
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-lg border border-white/10 bg-slate-950 p-4 sm:p-5">
+        <div className="mb-4 sm:mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+          <h3 className="text-lg sm:text-xl font-black">Editar respuesta</h3>
           <IconButton label="Cerrar" onClick={onClose} icon={<X size={17} />} />
         </div>
-        <div className="grid gap-4">
-          <input value={draft.nombre} onChange={(event) => setDraft({ ...draft, nombre: event.target.value })} className="input" />
+        <div className="grid gap-3 sm:gap-4">
+          <input value={draft.nombre} onChange={(event) => setDraft({ ...draft, nombre: event.target.value })} className="input text-xs sm:text-sm" placeholder="Nombre" />
           <input
             value={draft.nombreAcompanante || ""}
             onChange={(event) => setDraft({ ...draft, nombreAcompanante: event.target.value })}
-            className="input"
+            className="input text-xs sm:text-sm"
             placeholder="Acompañante"
           />
           <ToggleRow label="Se queda a cenar" checked={draft.seQuedaACenar} onChange={(value) => setDraft({ ...draft, seQuedaACenar: value })} />
-          <input value={draft.alergias} onChange={(event) => setDraft({ ...draft, alergias: event.target.value })} className="input" />
-          <textarea value={draft.comentarios} onChange={(event) => setDraft({ ...draft, comentarios: event.target.value })} className="input min-h-24" />
+          <input value={draft.alergias} onChange={(event) => setDraft({ ...draft, alergias: event.target.value })} className="input text-xs sm:text-sm" placeholder="Alergias" />
+          <textarea value={draft.comentarios} onChange={(event) => setDraft({ ...draft, comentarios: event.target.value })} className="input min-h-20 sm:min-h-24 text-xs sm:text-sm" placeholder="Comentarios" />
           <input
             type="number"
             value={draft.puntos}
             onChange={(event) => setDraft({ ...draft, puntos: Number(event.target.value || 0) })}
-            className="input"
+            className="input text-xs sm:text-sm"
+            placeholder="Puntos"
           />
           <button
             onClick={() => {
               dispatch({ type: "updateAttendee", attendee: draft });
               onClose();
             }}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-5 py-3 font-black text-slate-950"
+            className="inline-flex min-h-10 sm:min-h-12 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-4 sm:px-5 py-2 sm:py-3 text-xs sm:text-sm font-black text-slate-950"
           >
-            <Save size={18} />
+            <Save size={16} />
             Guardar cambios
           </button>
         </div>
