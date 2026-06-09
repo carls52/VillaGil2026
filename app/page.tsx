@@ -98,9 +98,23 @@ const drinkLabels: Record<string, string> = {
 const getDrinkLabel = (drink: Drink) => drinkLabels[drink] || drink;
 
 const getDrinkOptions = (question?: QuestionConfig) =>
-  question?.options?.length ? question.options : Object.values(drinkLabels);
+  question?.options?.length
+    ? question.options
+    : question?.opciones?.length
+    ? question.opciones
+    : Object.values(drinkLabels);
 
 const drinkMatchesOption = (drink: Drink, option: string) => drink === option || getDrinkLabel(drink) === option;
+
+const stateUrl = () => `/api/state?t=${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const noStoreFetchOptions = {
+  cache: "no-store" as RequestCache,
+  headers: {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    Pragma: "no-cache"
+  }
+};
 
 const defaultQuestionTypes: Record<string, QuestionType> = {
   nombre: "text",
@@ -219,7 +233,7 @@ const normalizeState = (state: State): State => {
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "hydrate":
-      return normalizeState(action.state);
+      return action.state;
     case "addAttendees":
       return { ...state, attendees: [...state.attendees, ...action.attendees] };
     case "updateAttendee":
@@ -315,6 +329,7 @@ export default function Home() {
   const [toast, setToast] = useState("");
   const [isHydrated, setIsHydrated] = useState(false);
   const [syncStatus, setSyncStatus] = useState("Conectando con Supabase");
+  const [supabaseConnection, setSupabaseConnection] = useState<"checking" | "connected" | "error">("checking");
   const [manualSaving, setManualSaving] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localChangeVersion = useRef(0);
@@ -353,9 +368,14 @@ export default function Home() {
     try {
       setManualSaving(true);
       setSyncStatus("Guardando cambios");
-      const response = await fetch("/api/state", {
+      const response = await fetch(stateUrl(), {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache"
+        },
         body: JSON.stringify({ state })
       });
       const payload = await response.json();
@@ -365,9 +385,11 @@ export default function Home() {
       }
 
       savedChangeVersion.current = localChangeVersion.current;
+      setSupabaseConnection("connected");
       setSyncStatus("Datos sincronizados");
       showToast("Cambios guardados correctamente.");
     } catch (error) {
+      setSupabaseConnection("error");
       setSyncStatus("Cambios solo en memoria: revisa Supabase");
       showToast("No se pudieron guardar los cambios.");
       console.error(error);
@@ -381,7 +403,8 @@ export default function Home() {
 
     async function loadState() {
       try {
-        const response = await fetch("/api/state", { cache: "no-store" });
+        setSupabaseConnection("checking");
+        const response = await fetch(stateUrl(), noStoreFetchOptions);
         const payload = await response.json();
 
         if (!response.ok) {
@@ -390,15 +413,20 @@ export default function Home() {
 
         if (!cancelled && payload.state) {
           hasRemoteState.current = true;
+          setSupabaseConnection("connected");
           dispatch({ type: "hydrate", state: payload.state });
         }
         if (!cancelled) {
           setIsHydrated(true);
-          setSyncStatus(payload.state ? "Datos sincronizados" : "Estado inicial preparado");
+          setSyncStatus(payload.state ? "Datos sincronizados" : "No hay estado remoto en Supabase");
+          if (!payload.state) {
+            setSupabaseConnection("error");
+          }
         }
       } catch (error) {
         if (!cancelled) {
           setIsHydrated(true);
+          setSupabaseConnection("error");
           setSyncStatus("Modo local: revisa la configuración de Supabase");
           console.error(error);
         }
@@ -432,7 +460,7 @@ export default function Home() {
         let stateToSave = state;
 
         if (questionChangeVersion.current <= savedChangeVersion.current) {
-          const latestResponse = await fetch("/api/state", { cache: "no-store" });
+          const latestResponse = await fetch(stateUrl(), noStoreFetchOptions);
           const latestPayload = await latestResponse.json();
 
           if (!latestResponse.ok) {
@@ -447,9 +475,14 @@ export default function Home() {
           }
         }
 
-        const response = await fetch("/api/state", {
+        const response = await fetch(stateUrl(), {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache"
+          },
           body: JSON.stringify({ state: stateToSave })
         });
         const payload = await response.json();
@@ -459,11 +492,13 @@ export default function Home() {
         }
 
         savedChangeVersion.current = Math.max(savedChangeVersion.current, versionToSave);
+        setSupabaseConnection("connected");
         if (stateToSave !== state) {
           rawDispatch({ type: "hydrate", state: stateToSave });
         }
         setSyncStatus("Datos sincronizados");
       } catch (error) {
+        setSupabaseConnection("error");
         setSyncStatus("Cambios solo en memoria: revisa Supabase");
         console.error(error);
       }
@@ -585,6 +620,7 @@ export default function Home() {
             onSave={saveStateNow}
             saving={manualSaving}
             syncStatus={syncStatus}
+            connection={supabaseConnection}
           />
         ) : (
           <AdminGate onUnlock={() => setAdminUnlocked(true)} />
@@ -1079,7 +1115,7 @@ function RankingView({
     let cancelled = false;
     (async function refresh() {
       try {
-        const res = await fetch('/api/state', { cache: 'no-store' });
+        const res = await fetch(stateUrl(), noStoreFetchOptions);
         if (!res.ok) throw new Error('Failed to fetch state');
         const payload = await res.json();
         if (!cancelled && payload?.state) {
@@ -1111,7 +1147,7 @@ function RankingView({
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      const res = await fetch('/api/state', { cache: 'no-store' });
+      const res = await fetch(stateUrl(), noStoreFetchOptions);
       if (!res.ok) throw new Error('Failed to fetch state');
       const payload = await res.json();
       if (payload?.state) {
@@ -1359,13 +1395,15 @@ function AdminView({
   dispatch,
   onSave,
   saving,
-  syncStatus
+  syncStatus,
+  connection
 }: {
   state: State;
   dispatch: React.Dispatch<Action>;
   onSave: () => void;
   saving: boolean;
   syncStatus: string;
+  connection: "checking" | "connected" | "error";
 }) {
   const [tab, setTab] = useState("respuestas");
   const tabs = [
@@ -1386,6 +1424,30 @@ function AdminView({
         </div>
       </div>
         <div className="flex flex-col items-stretch gap-2 sm:ml-auto sm:items-end">
+          <div
+            className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-black ${
+              connection === "connected"
+                ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                : connection === "checking"
+                ? "border-amber-300/30 bg-amber-300/10 text-amber-200"
+                : "border-rose-400/30 bg-rose-400/10 text-rose-300"
+            }`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                connection === "connected"
+                  ? "bg-emerald-400"
+                  : connection === "checking"
+                  ? "bg-amber-300"
+                  : "bg-rose-400"
+              }`}
+            />
+            {connection === "connected"
+              ? "Supabase conectado"
+              : connection === "checking"
+              ? "Comprobando Supabase"
+              : "Falló Supabase"}
+          </div>
           <button
             type="button"
             onClick={onSave}

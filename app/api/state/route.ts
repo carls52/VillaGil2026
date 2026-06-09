@@ -9,6 +9,8 @@ const noStoreHeaders = {
 };
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function GET() {
   try {
@@ -18,7 +20,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("app_state")
-      .select("state")
+      .select("state, updated_at")
       .eq("id", STATE_ID)
       .maybeSingle();
 
@@ -35,7 +37,10 @@ export async function GET() {
     }
 
     console.log("[API GET /state] Datos obtenidos:", !!data);
-    return NextResponse.json({ state: data?.state ?? null }, { headers: noStoreHeaders });
+    return NextResponse.json(
+      { state: data?.state ?? null, updatedAt: data?.updated_at ?? null },
+      { headers: noStoreHeaders }
+    );
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : "Error inesperado";
     console.error("[API GET /state] Error capturado:", {
@@ -59,7 +64,7 @@ export async function PUT(request: Request) {
 
     if (!state || typeof state !== "object") {
       console.error("[API PUT /state] Estado inválido:", typeof state);
-      return NextResponse.json({ error: "Estado inválido." }, { status: 400 });
+      return NextResponse.json({ error: "Estado inválido." }, { status: 400, headers: noStoreHeaders });
     }
 
     const supabase = getSupabaseAdmin();
@@ -86,12 +91,12 @@ export async function PUT(request: Request) {
       });
       return NextResponse.json(
         { error: `Supabase Error: ${error.message}` },
-        { status: 500 }
+        { status: 500, headers: noStoreHeaders }
       );
     }
 
     console.log("[API PUT /state] Estado guardado exitosamente");
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, updatedAt: payload.updated_at }, { headers: noStoreHeaders });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : "Error inesperado";
     console.error("[API PUT /state] Error capturado:", {
@@ -100,7 +105,7 @@ export async function PUT(request: Request) {
     });
     return NextResponse.json(
       { error: `Excepción: ${errorMsg}` },
-      { status: 500 }
+      { status: 500, headers: noStoreHeaders }
     );
   }
 }
