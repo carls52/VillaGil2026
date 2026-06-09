@@ -208,21 +208,11 @@ const normalizeQuestion = (question: QuestionConfig): QuestionConfig => {
 };
 
 const normalizeState = (state: State): State => {
-  const incomingQuestions = state.questions || [];
-  const baseIds = new Set(initialState.questions.map((question) => question.id));
-  const mergedBaseQuestions = initialState.questions.map((baseQuestion) =>
-    normalizeQuestion({
-      ...baseQuestion,
-      ...incomingQuestions.find((question) => question.id === baseQuestion.id)
-    })
-  );
-  const extraQuestions = incomingQuestions
-    .filter((question) => !baseIds.has(question.id))
-    .map(normalizeQuestion);
+  const incomingQuestions = Array.isArray(state.questions) ? state.questions : initialState.questions;
 
   return {
     ...state,
-    questions: [...mergedBaseQuestions, ...extraQuestions]
+    questions: incomingQuestions.map(normalizeQuestion)
   };
 };
 
@@ -725,10 +715,11 @@ function SignupView({
   });
   const [extraAnswers, setExtraAnswers] = useState<Record<string, string>>({});
 
-  const question = (id: string) =>
-    questions.find((item) => item.id === id) || { id, label: id, required: false, type: "text" };
+  const getQuestion = (id: string) => questions.find((item) => item.id === id);
+  const hasQuestion = (id: string) => Boolean(getQuestion(id));
+  const question = (id: string) => getQuestion(id) || { id, label: id, required: false, type: "text" };
   const extraQuestions = questions.filter((item) => item.id.startsWith("extra-"));
-  const beverageQuestion = question("bebidas");
+  const beverageQuestion = getQuestion("bebidas");
   const beverageOptions = getDrinkOptions(beverageQuestion);
   const toggleDrink = (drink: Drink) => {
     setForm((current) => ({
@@ -787,6 +778,7 @@ function SignupView({
         </button>
       </aside>
       <form onSubmit={submit} className="space-y-3 sm:space-y-5 rounded-lg border border-white/10 bg-white/10 p-3 sm:p-6">
+        {hasQuestion("nombre") && (
         <Field label={question("nombre").label} required={question("nombre").required}>
           <input
             required={question("nombre").required}
@@ -796,11 +788,15 @@ function SignupView({
             placeholder="Tu nombre"
           />
         </Field>
-        <ToggleRow
-          label={question("traeAcompanante").label}
-          checked={form.traeAcompanante}
-          onChange={(checked) => setForm({ ...form, traeAcompanante: checked })}
-        />
+        )}
+        {hasQuestion("traeAcompanante") && (
+          <ToggleRow
+            label={question("traeAcompanante").label}
+            checked={form.traeAcompanante}
+            onChange={(checked) => setForm({ ...form, traeAcompanante: checked })}
+          />
+        )}
+        {hasQuestion("traeAcompanante") && hasQuestion("nombreAcompanante") && (
         <div
           className={`grid transition-all duration-300 ${
             form.traeAcompanante ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
@@ -818,11 +814,15 @@ function SignupView({
             </Field>
           </div>
         </div>
-        <ToggleRow
-          label={question("seQuedaACenar").label}
-          checked={form.seQuedaACenar}
-          onChange={(checked) => setForm({ ...form, seQuedaACenar: checked })}
-        />
+        )}
+        {hasQuestion("seQuedaACenar") && (
+          <ToggleRow
+            label={question("seQuedaACenar").label}
+            checked={form.seQuedaACenar}
+            onChange={(checked) => setForm({ ...form, seQuedaACenar: checked })}
+          />
+        )}
+        {hasQuestion("alergias") && (
         <Field label={question("alergias").label} required={question("alergias").required}>
           <input
             required={question("alergias").required}
@@ -832,6 +832,8 @@ function SignupView({
             placeholder="Indica alergias o intolerancias"
           />
         </Field>
+        )}
+        {beverageQuestion && (
         <Field label={beverageQuestion.label} required={beverageQuestion.required}>
           <div className="flex flex-col gap-2">
             {beverageOptions.map((drink) => (
@@ -860,6 +862,8 @@ function SignupView({
             <option value="ok">Seleccionado</option>
           </select>
         </Field>
+        )}
+        {hasQuestion("comentarios") && (
         <Field label={question("comentarios").label} required={question("comentarios").required}>
           <textarea
             required={question("comentarios").required}
@@ -869,6 +873,7 @@ function SignupView({
             placeholder="Cualquier comentario útil"
           />
         </Field>
+        )}
         {extraQuestions.map((item) => (
           <DynamicQuestionField
             key={item.id}
@@ -1819,17 +1824,11 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
             checked={question.required}
             onChange={(required) => dispatch({ type: "updateQuestion", question: { ...question, required } })}
           />
-          {fixedIds.has(question.id) ? (
-            <span className="inline-flex min-h-8 sm:min-h-10 items-center justify-center rounded-lg border border-white/10 px-2 sm:px-3 text-xs font-bold text-slate-400">
-              Base
-            </span>
-          ) : (
-            <IconButton
-              label="Eliminar"
-              onClick={() => dispatch({ type: "deleteQuestion", id: question.id })}
-              icon={<Trash2 size={14} />}
-            />
-          )}
+          <IconButton
+            label="Eliminar"
+            onClick={() => dispatch({ type: "deleteQuestion", id: question.id })}
+            icon={<Trash2 size={14} />}
+          />
           {(question.type || defaultQuestionTypes[question.id] || "text") === "select" && (
             <div className="space-y-2 md:col-span-4">
               {getQuestionOptions(question).map((option, index) => (
