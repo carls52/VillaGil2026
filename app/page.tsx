@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useReducer, useRef, useState } from "react";
 
-type Drink = "cerveza" | "tinto" | "limon" | "sin_alcohol";
+type Drink = string;
 type QuestionType = "text" | "yes_no" | "select";
 
 interface Attendee {
@@ -87,12 +87,19 @@ type Action =
   | { type: "updateRule"; rule: PointRule }
   | { type: "deleteRule"; id: string };
 
-const drinkLabels: Record<Drink, string> = {
+const drinkLabels: Record<string, string> = {
   cerveza: "Cerveza",
   tinto: "Tinto",
   limon: "Limón",
   sin_alcohol: "Sin alcohol"
 };
+
+const getDrinkLabel = (drink: Drink) => drinkLabels[drink] || drink;
+
+const getDrinkOptions = (question?: QuestionConfig) =>
+  question?.options?.length ? question.options : Object.values(drinkLabels);
+
+const drinkMatchesOption = (drink: Drink, option: string) => drink === option || getDrinkLabel(drink) === option;
 
 const defaultQuestionTypes: Record<string, QuestionType> = {
   nombre: "text",
@@ -462,9 +469,9 @@ function HomeView({ onPoster, onSignup }: { onPoster: () => void; onSignup: () =
             VILLAGIL FEST 2026
           </h1>
           <p className="max-w-2xl text-lg leading-8 text-slate-200 sm:text-xl">
-            El evento definitivo “Toledo Nirvana” de 2026: piscina, energía subacuática y una
-            imagen oficial creada para marcar la tarde. Consulta el cartel oficial para ver el
-            lineup completo.
+            ¡Vuelve el evento del verano! Cumplo 29 años y lo celebramos de la mejor manera:
+            piscina, barra libre, cena, los 3 escenarios oficiales de siempre y un montón de juegos.
+            Id preparando vuestro mejor look y venid con ganas de darlo todo.
           </p>
         </div>
         <div className="grid gap-3 text-sm text-slate-200 sm:grid-cols-2">
@@ -505,6 +512,77 @@ function HomeView({ onPoster, onSignup }: { onPoster: () => void; onSignup: () =
           className="h-auto w-full rounded-md object-cover transition duration-300 group-hover:scale-[1.015]"
         />
       </button>
+      <div className="space-y-4 lg:col-span-2">
+        <div className="rounded-lg border border-white/10 bg-white/10 p-4 sm:p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-neon/30 bg-neon/10 text-neon">
+              <Sparkles size={20} />
+            </span>
+            <div>
+              <h2 className="text-xl font-black sm:text-2xl">Dress Code & Premio Outfit</h2>
+              <p className="text-sm font-semibold text-slate-300">Venid con rollazo festivalero.</p>
+            </div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-[1.2fr_0.8fr]">
+            <div className="rounded-lg border border-amber-300/25 bg-amber-300/10 p-4">
+              <p className="text-sm font-bold leading-6 text-amber-100 sm:text-base">
+                A las 18:00 se cierra la votación popular al mejor outfit. ¡El ganador se lleva
+                +200 pts directos para el ranking!
+              </p>
+            </div>
+            <div className="rounded-lg border border-white/10 bg-slate-950/55 p-4">
+              <p className="text-sm font-semibold leading-6 text-slate-200">
+                Prohibida la purpurina por el bien de la piscina.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-white/10 bg-white/10 p-4 sm:p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-neon/30 bg-neon/10 text-neon">
+              <Trophy size={20} />
+            </span>
+            <div>
+              <h2 className="text-xl font-black sm:text-2xl">Guía del Ranking VillaGil</h2>
+              <p className="text-sm font-semibold text-slate-300">Los 3 mejores tendrán premio.</p>
+            </div>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="rounded-lg border border-white/10 bg-slate-950/55 p-4">
+              <h3 className="mb-3 text-sm font-black uppercase tracking-wide text-neon">Bebidas</h3>
+              <div className="grid gap-2 text-sm font-semibold text-slate-200 sm:grid-cols-3">
+                <span className="rounded-md bg-white/5 px-3 py-2">Refresco · 40 pts</span>
+                <span className="rounded-md bg-white/5 px-3 py-2">Cerveza/Tinto · 50 pts</span>
+                <span className="rounded-md bg-white/5 px-3 py-2">Chupito · 20 pts</span>
+              </div>
+            </div>
+            <div className="rounded-lg border border-white/10 bg-slate-950/55 p-4">
+              <h3 className="mb-3 text-sm font-black uppercase tracking-wide text-neon">Juegos</h3>
+              <div className="grid gap-2 text-sm font-semibold text-slate-200 sm:grid-cols-2">
+                <span className="rounded-md bg-white/5 px-3 py-2">Dardos · 20 pts</span>
+                <span className="rounded-md bg-white/5 px-3 py-2">Cornhole · 30 pts</span>
+                <span className="rounded-md bg-white/5 px-3 py-2">Ping-pong · 30 pts</span>
+                <span className="rounded-md bg-white/5 px-3 py-2">Beer-pong · 40 pts</span>
+                <span className="rounded-md bg-white/5 px-3 py-2 sm:col-span-2">Billar · 50 pts</span>
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 grid gap-3 lg:grid-cols-[0.8fr_1.2fr]">
+            <div className="rounded-lg border border-emerald-300/25 bg-emerald-300/10 p-4">
+              <p className="text-sm font-black leading-6 text-emerald-200 sm:text-base">
+                Bonus: +250 pts si ganas al menos una vez a los 5 juegos.
+              </p>
+            </div>
+            <div className="rounded-lg border border-violeta/30 bg-violeta/10 p-4">
+              <p className="text-sm font-semibold leading-6 text-slate-200">
+                Misiones especiales: estad atentos, en cualquier momento los jueces pueden lanzar
+                misiones sorpresa por puntos.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -543,6 +621,8 @@ function SignupView({
   const question = (id: string) =>
     questions.find((item) => item.id === id) || { id, label: id, required: false, type: "text" };
   const extraQuestions = questions.filter((item) => item.id.startsWith("extra-"));
+  const beverageQuestion = question("bebidas");
+  const beverageOptions = getDrinkOptions(beverageQuestion);
   const toggleDrink = (drink: Drink) => {
     setForm((current) => ({
       ...current,
@@ -645,9 +725,9 @@ function SignupView({
             placeholder="Indica alergias o intolerancias"
           />
         </Field>
-        <Field label={question("bebidas").label} required={question("bebidas").required}>
+        <Field label={beverageQuestion.label} required={beverageQuestion.required}>
           <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-3">
-            {(Object.keys(drinkLabels) as Drink[]).map((drink) => (
+            {beverageOptions.map((drink) => (
               <button
                 key={drink}
                 type="button"
@@ -658,13 +738,13 @@ function SignupView({
                     : "border-white/12 bg-slate-950/50 text-slate-200"
                 }`}
               >
-                {drinkLabels[drink]}
+                {getDrinkLabel(drink)}
               </button>
             ))}
           </div>
           <select
             className="sr-only"
-            required={question("bebidas").required}
+            required={beverageQuestion.required}
             value={form.bebidas.length ? "ok" : ""}
             onChange={() => undefined}
           >
@@ -1172,6 +1252,8 @@ function ResponsesTab({
   const dinner = attendees.filter((attendee) => attendee.seQuedaACenar).length;
   const drinkTotal = attendees.reduce((total, attendee) => total + attendee.bebidas.length, 0) || 1;
   const questionLabels = Object.fromEntries(questions.map((question) => [question.id, question.label]));
+  const beverageQuestion = questions.find((question) => question.id === "bebidas");
+  const beverageOptions = getDrinkOptions(beverageQuestion);
 
   return (
     <div className="space-y-6">
@@ -1183,13 +1265,15 @@ function ResponsesTab({
       <div className="rounded-lg border border-white/10 bg-white/10 p-4">
         <h3 className="mb-4 text-xl font-black">Bebidas</h3>
         <div className="space-y-3">
-          {(Object.keys(drinkLabels) as Drink[]).map((drink) => {
-            const count = attendees.filter((attendee) => attendee.bebidas.includes(drink)).length;
+          {beverageOptions.map((drink) => {
+            const count = attendees.filter((attendee) =>
+              attendee.bebidas.some((attendeeDrink) => drinkMatchesOption(attendeeDrink, drink))
+            ).length;
             const percent = Math.round((count / drinkTotal) * 100);
             return (
               <div key={drink}>
                 <div className="mb-1 flex justify-between text-sm font-bold">
-                  <span>{drinkLabels[drink]}</span>
+                  <span>{getDrinkLabel(drink)}</span>
                   <span>{percent}%</span>
                 </div>
                 <div className="h-3 rounded-full bg-slate-800">
@@ -1219,7 +1303,7 @@ function ResponsesTab({
                 <td className="px-2 sm:px-3 py-3 font-bold">{attendee.nombre}</td>
                 <td className="px-2 sm:px-3 py-3 text-xs sm:text-sm">{attendee.nombreAcompanante || "No"}</td>
                 <td className="px-2 sm:px-3 py-3 text-xs sm:text-sm">{attendee.seQuedaACenar ? "Sí" : "No"}</td>
-                <td className="px-2 sm:px-3 py-3 text-xs sm:text-sm">{attendee.bebidas.map((drink) => drinkLabels[drink]).join(", ")}</td>
+                <td className="px-2 sm:px-3 py-3 text-xs sm:text-sm">{attendee.bebidas.map((drink) => getDrinkLabel(drink)).join(", ")}</td>
                 <td className="px-2 sm:px-3 py-3 font-black text-neon text-right">{attendee.puntos}</td>
                 <td className="px-2 sm:px-3 py-3">
                   <div className="flex gap-1 sm:gap-2">
@@ -1589,9 +1673,9 @@ function QuestionsTab({ questions, dispatch }: { questions: QuestionConfig[]; di
               icon={<Trash2 size={14} />}
             />
           )}
-          {(question.type || "text") === "select" && (
+          {(question.type || defaultQuestionTypes[question.id] || "text") === "select" && (
             <input
-              value={(question.options || []).join(", ")}
+              value={(question.options || (question.id === "bebidas" ? getDrinkOptions(question) : [])).join(", ")}
               onChange={(event) =>
                 dispatch({
                   type: "updateQuestion",
