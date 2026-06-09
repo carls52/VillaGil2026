@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "../../../lib/supabase-admin";
 
 const STATE_ID = "villagil-fest-2026";
+const noStoreHeaders = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+  Pragma: "no-cache",
+  Expires: "0"
+};
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +30,12 @@ export async function GET() {
       });
       return NextResponse.json(
         { error: `Supabase Error: ${error.message}` },
-        { status: 500 }
+        { status: 500, headers: noStoreHeaders }
       );
     }
 
     console.log("[API GET /state] Datos obtenidos:", !!data);
-    return NextResponse.json({ state: data?.state ?? null });
+    return NextResponse.json({ state: data?.state ?? null }, { headers: noStoreHeaders });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : "Error inesperado";
     console.error("[API GET /state] Error capturado:", {
@@ -39,7 +44,7 @@ export async function GET() {
     });
     return NextResponse.json(
       { error: `Excepción: ${errorMsg}` },
-      { status: 500 }
+      { status: 500, headers: noStoreHeaders }
     );
   }
 }

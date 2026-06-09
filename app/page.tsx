@@ -315,10 +315,12 @@ export default function Home() {
   const [toast, setToast] = useState("");
   const [isHydrated, setIsHydrated] = useState(false);
   const [syncStatus, setSyncStatus] = useState("Conectando con Supabase");
+  const [manualSaving, setManualSaving] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localChangeVersion = useRef(0);
   const savedChangeVersion = useRef(0);
   const questionChangeVersion = useRef(0);
+  const hasRemoteState = useRef(false);
 
   const dispatch = useCallback<React.Dispatch<Action>>((action) => {
     if (action.type !== "hydrate") {
@@ -337,6 +339,43 @@ export default function Home() {
     setTimeout(() => setToast(""), 3200);
   };
 
+  const saveStateNow = useCallback(async () => {
+    if (!hasRemoteState.current) {
+      setSyncStatus("Sin estado remoto: no se guardan valores predeterminados");
+      showToast("No se ha cargado estado remoto. Recarga antes de guardar.");
+      return;
+    }
+
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current as ReturnType<typeof setTimeout>);
+    }
+
+    try {
+      setManualSaving(true);
+      setSyncStatus("Guardando cambios");
+      const response = await fetch("/api/state", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state })
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "No se pudo guardar el estado.");
+      }
+
+      savedChangeVersion.current = localChangeVersion.current;
+      setSyncStatus("Datos sincronizados");
+      showToast("Cambios guardados correctamente.");
+    } catch (error) {
+      setSyncStatus("Cambios solo en memoria: revisa Supabase");
+      showToast("No se pudieron guardar los cambios.");
+      console.error(error);
+    } finally {
+      setManualSaving(false);
+    }
+  }, [state]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -350,6 +389,7 @@ export default function Home() {
         }
 
         if (!cancelled && payload.state) {
+          hasRemoteState.current = true;
           dispatch({ type: "hydrate", state: payload.state });
         }
         if (!cancelled) {
@@ -374,6 +414,10 @@ export default function Home() {
 
   useEffect(() => {
     if (!isHydrated) return;
+    if (!hasRemoteState.current) {
+      setSyncStatus("Sin estado remoto: no se guardan valores predeterminados");
+      return;
+    }
 
     const versionToSave = localChangeVersion.current;
     if (versionToSave === savedChangeVersion.current) return;
@@ -535,7 +579,13 @@ export default function Home() {
       
       {view === "admin" &&
         (adminUnlocked ? (
-          <AdminView state={state} dispatch={dispatch} />
+          <AdminView
+            state={state}
+            dispatch={dispatch}
+            onSave={saveStateNow}
+            saving={manualSaving}
+            syncStatus={syncStatus}
+          />
         ) : (
           <AdminGate onUnlock={() => setAdminUnlocked(true)} />
         ))}
@@ -1029,7 +1079,7 @@ function RankingView({
     let cancelled = false;
     (async function refresh() {
       try {
-        const res = await fetch('/api/state');
+        const res = await fetch('/api/state', { cache: 'no-store' });
         if (!res.ok) throw new Error('Failed to fetch state');
         const payload = await res.json();
         if (!cancelled && payload?.state) {
@@ -1061,7 +1111,7 @@ function RankingView({
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      const res = await fetch('/api/state');
+      const res = await fetch('/api/state', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to fetch state');
       const payload = await res.json();
       if (payload?.state) {
@@ -1304,7 +1354,19 @@ function AdminGate({ onUnlock }: { onUnlock: () => void }) {
   );
 }
 
-function AdminView({ state, dispatch }: { state: State; dispatch: React.Dispatch<Action> }) {
+function AdminView({
+  state,
+  dispatch,
+  onSave,
+  saving,
+  syncStatus
+}: {
+  state: State;
+  dispatch: React.Dispatch<Action>;
+  onSave: () => void;
+  saving: boolean;
+  syncStatus: string;
+}) {
   const [tab, setTab] = useState("respuestas");
   const tabs = [
     ["respuestas", "Respuestas"],
@@ -1315,11 +1377,25 @@ function AdminView({ state, dispatch }: { state: State; dispatch: React.Dispatch
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
         <Settings className="text-neon" />
         <div>
           <h2 className="text-3xl font-black">Panel de Administración</h2>
           <p className="text-slate-300">Gestión completa del evento en modo simulado.</p>
+        </div>
+      </div>
+        <div className="flex flex-col items-stretch gap-2 sm:ml-auto sm:items-end">
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-neon to-violeta px-4 text-sm font-black text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Save size={17} />
+            {saving ? "Guardando..." : "Guardar cambios"}
+          </button>
+          <p className="text-right text-xs font-semibold text-slate-400">{syncStatus}</p>
         </div>
       </div>
       <div className="mb-6 flex gap-1 overflow-x-auto rounded-lg border border-white/10 bg-white/10 p-1">
